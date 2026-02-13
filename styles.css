@@ -1,0 +1,274 @@
+:root {
+  --bg-0: #040507;
+  --bg-1: #0b0f18;
+  --text: #f0f2f7;
+  --muted: #b5bccd;
+  --line: rgba(240, 242, 247, 0.28);
+  --line-strong: rgba(240, 242, 247, 0.64);
+  --accent: #ffd98d;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(57, 102, 178, 0.22), transparent 40%),
+    radial-gradient(circle at 85% 0%, rgba(181, 102, 72, 0.18), transparent 44%),
+    linear-gradient(180deg, var(--bg-1), var(--bg-0));
+  color: var(--text);
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
+}
+
+.app {
+  width: min(1150px, 96vw);
+  margin: 0 auto;
+  padding: 1rem 1.2rem;
+  height: 100vh;
+  display: grid;
+  grid-template-rows: 1fr auto auto auto;
+  gap: 0.8rem;
+}
+
+.app__header h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+.app__header p {
+  margin: 0.4rem 0;
+  color: var(--muted);
+}
+
+.timestamp {
+  margin: 0.1rem 0 0;
+  font-size: 0.92rem;
+  text-align: center;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.chart {
+  position: relative;
+  min-height: 0;
+  padding: 0;
+}
+
+.axis {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 2px;
+}
+
+.axis-line {
+  height: 2px;
+  width: 100%;
+  background: linear-gradient(90deg, transparent, var(--line-strong), transparent);
+}
+
+.zodiac-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+}
+
+.zodiac-tick {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 1.8rem;
+  background: var(--line);
+}
+
+.zodiac-label {
+  position: absolute;
+  top: calc(50% - 108px);
+  transform: translateX(-50%);
+  font-size: clamp(1.45rem, 2.6vw, 2rem);
+  color: rgba(240, 242, 247, 0.9);
+  font-family: "Noto Sans Symbols 2", "Segoe UI Symbol", "Apple Symbols", serif;
+}
+
+.planet-layer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.planet {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: block;
+  pointer-events: none;
+}
+
+.planet__node {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #f1f3f9;
+  color: #101423;
+  display: grid;
+  place-items: center;
+  font-size: 1.3rem;
+  line-height: 1;
+  font-weight: 600;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.3);
+  font-family: "Noto Sans Symbols 2", "Segoe UI Symbol", "Apple Symbols", serif;
+}
+
+.planet--sun .planet__node {
+  width: 42px;
+  height: 42px;
+  font-size: 1.4rem;
+  background: radial-gradient(circle at 36% 34%, #fff8d9, var(--accent));
+  color: #382300;
+  box-shadow:
+    0 0 0 2px rgba(255, 217, 141, 0.3),
+    0 0 30px 0 rgba(255, 206, 117, 0.75);
+}
+
+.planet__label {
+  position: absolute;
+  top: 36px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.75rem;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+  text-transform: uppercase;
+  white-space: nowrap;
+  line-height: 1;
+  padding: 0.1rem 0.25rem;
+  border-radius: 0.25rem;
+  background: rgba(4, 6, 10, 0.72);
+}
+
+.legend {
+  margin-top: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.legend-item {
+  border: 1px solid rgba(240, 242, 247, 0.16);
+  border-radius: 0.55rem;
+  padding: 0.55rem 0.7rem;
+  background: rgba(7, 11, 17, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.legend-left {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.legend-symbol {
+  font-size: 1.1rem;
+  font-family: "Noto Sans Symbols 2", "Segoe UI Symbol", "Apple Symbols", serif;
+}
+
+.legend-value {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.time-controls {
+  margin-top: 0;
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.time-btn {
+  border: 1px solid rgba(240, 242, 247, 0.2);
+  border-radius: 0.5rem;
+  padding: 0.52rem 0.6rem;
+  color: var(--text);
+  background: rgba(7, 11, 17, 0.52);
+  font: inherit;
+  font-size: 0.92rem;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+.time-btn:hover {
+  border-color: rgba(177, 215, 255, 0.55);
+  background: rgba(18, 31, 48, 0.55);
+}
+
+.time-btn--now {
+  border-color: rgba(255, 219, 149, 0.5);
+  background: rgba(48, 36, 14, 0.45);
+}
+
+@media (max-width: 640px) {
+  .app {
+    height: auto;
+    min-height: 100vh;
+    display: block;
+    margin: 0.7rem auto;
+    padding: 0.8rem;
+  }
+
+  .chart {
+    margin-top: 0;
+    min-height: 320px;
+    padding: 4.6rem 0 5.4rem;
+  }
+
+  .zodiac-label {
+    top: calc(50% - 96px);
+  }
+
+  .legend {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .legend-item {
+    padding: 0.45rem 0.5rem;
+  }
+
+  .legend-value {
+    font-size: 0.78rem;
+  }
+
+  .time-controls {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .planet__node {
+    width: 22px;
+    height: 22px;
+    font-size: 1.24rem;
+  }
+
+  .planet--sun .planet__node {
+    width: 38px;
+    height: 38px;
+    font-size: 1.2rem;
+  }
+}

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Starpath</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <section class="chart" aria-label="Linear zodiac chart">
+        <div class="zodiac-band" id="zodiac-band"></div>
+        <div class="axis" id="axis">
+          <div class="axis-line"></div>
+        </div>
+        <div class="planet-layer" id="planet-layer"></div>
+      </section>
+
+      <aside class="legend" id="legend"></aside>
+      <section class="time-controls" aria-label="Time navigation">
+        <button class="time-btn" data-step="-1-year">-1 Year</button>
+        <button class="time-btn" data-step="-1-month">-1 Month</button>
+        <button class="time-btn" data-step="-1-week">-1 Week</button>
+        <button class="time-btn" data-step="-1-day">-1 Day</button>
+        <button class="time-btn time-btn--now" data-step="now">Now</button>
+        <button class="time-btn" data-step="1-day">+1 Day</button>
+        <button class="time-btn" data-step="1-week">+1 Week</button>
+        <button class="time-btn" data-step="1-month">+1 Month</button>
+        <button class="time-btn" data-step="1-year">+1 Year</button>
+      </section>
+      <p class="timestamp" id="timestamp"></p>
+    </main>
+
+    <script src="./node_modules/astronomy-engine/astronomy.browser.min.js"></script>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
