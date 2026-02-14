@@ -1009,6 +1009,9 @@ function shiftViewDate(amount, unit) {
 
 const KEYBOARD_STEP_UNITS = ["minute", "hour", "day", "week", "month", "year"];
 let selectedStepUnit = "day";
+const WHEEL_TRAVEL_THRESHOLD = 24;
+let wheelTravelAccumulator = 0;
+let wheelTravelDirection = 0;
 const OPTION_SHORTCUTS = Object.freeze({
   s: "stars",
   l: "labels",
@@ -1034,6 +1037,13 @@ function shiftSelectedStepUnit(direction) {
   const safeIndex = currentIndex === -1 ? KEYBOARD_STEP_UNITS.indexOf("day") : currentIndex;
   const nextIndex = Math.max(0, Math.min(KEYBOARD_STEP_UNITS.length - 1, safeIndex + direction));
   setSelectedStepUnit(KEYBOARD_STEP_UNITS[nextIndex]);
+}
+
+function normalizedWheelDelta(event) {
+  let delta = Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
+  if (event.deltaMode === 1) delta *= 16;
+  if (event.deltaMode === 2) delta *= globalThis.innerHeight || 800;
+  return delta;
 }
 
 function toggleBooleanOption(optionKey) {
@@ -1137,6 +1147,40 @@ globalThis.addEventListener("keydown", (event) => {
   render();
 });
 
+function handleWheelTimeTravel(event) {
+  if (event.altKey || event.ctrlKey || event.metaKey) return;
+  if (isEditableTarget(event.target)) return;
+
+  const target = event.target;
+  if (target instanceof Node) {
+    if (optionsPanelEl?.contains(target) || timeControlsEl?.contains(target)) {
+      return;
+    }
+  }
+
+  const delta = normalizedWheelDelta(event);
+  if (!Number.isFinite(delta) || Math.abs(delta) < 0.01) return;
+
+  const direction = delta > 0 ? 1 : -1;
+  if (wheelTravelDirection !== 0 && direction !== wheelTravelDirection) {
+    wheelTravelAccumulator = 0;
+  }
+  wheelTravelDirection = direction;
+  wheelTravelAccumulator += Math.abs(delta);
+
+  const steps = Math.trunc(wheelTravelAccumulator / WHEEL_TRAVEL_THRESHOLD);
+  if (steps < 1) return;
+
+  event.preventDefault();
+  wheelTravelAccumulator -= steps * WHEEL_TRAVEL_THRESHOLD;
+  shiftViewDate(direction * steps, selectedStepUnit);
+  render();
+}
+
+if (globalThis.document) {
+  globalThis.document.addEventListener("wheel", handleWheelTimeTravel, { passive: false });
+}
+
 if (optionsToggleEl && optionsPanelEl) {
   optionsToggleEl.addEventListener("click", (event) => {
     event.stopPropagation();
@@ -1153,7 +1197,7 @@ if (optionsToggleEl && optionsPanelEl) {
 
   globalThis.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
-      setOptionsPanelOpen(false);
+      setOptionsPanelOpen(true);
     }
   });
 }
