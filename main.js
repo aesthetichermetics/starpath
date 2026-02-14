@@ -36,6 +36,7 @@ const timestampEl = document.getElementById("timestamp");
 const timeButtons = document.querySelectorAll(".time-btn");
 const trendSvgEl = document.getElementById("trend-svg");
 const starfieldEl = document.getElementById("starfield");
+const chartEl = document.querySelector(".chart");
 const chartWaveEl = document.getElementById("chart-wave");
 const timeControlsEl = document.getElementById("time-controls");
 const optionsToggleEl = document.getElementById("options-toggle");
@@ -57,6 +58,20 @@ const TREND_COLORS = {
 
 const TREND_WINDOW_DAYS = 30;
 const TREND_STEP_HOURS = 12;
+const MOBILE_MEDIA_QUERY = "(max-width: 640px)";
+
+function mediaMatches(query) {
+  return globalThis.matchMedia?.(query).matches ?? false;
+}
+
+function isMobileViewport() {
+  return mediaMatches(MOBILE_MEDIA_QUERY);
+}
+
+function isPortraitMobileViewport() {
+  return isMobileViewport() && mediaMatches("(orientation: portrait)");
+}
+
 const DEFAULT_VIEW_OPTIONS = {
   stars: true,
   labels: true,
@@ -483,30 +498,36 @@ function layoutPlanetLabelsHorizontal(markers) {
 
 function layoutPlanetLabelsVertical(markers) {
   const sorted = [...markers].sort((a, b) => a.yPct - b.yPct);
+  const minGapPct = isMobileViewport() ? 5.2 : 6.3;
+  const baseOffsetPx = isMobileViewport() ? 38 : 42;
+  const laneOffsetsPx = isMobileViewport()
+    ? [0, -15, 15, -30, 30]
+    : [0, -16, 16, -32, 32, -48, 48];
   const lanes = [];
-  const maxLanes = 3;
-  const minGapPct = 6.5;
+  const chartHeight = Math.max(planetLayerEl.clientHeight, 1);
 
   sorted.forEach((marker) => {
     if (!marker.labelEl) return;
     let lane = -1;
-    for (let i = 0; i < maxLanes; i += 1) {
+    for (let i = 0; i < laneOffsetsPx.length; i += 1) {
+      const offsetPct = (laneOffsetsPx[i] / chartHeight) * 100;
+      const placedY = marker.yPct + offsetPct;
       const lastY = lanes[i];
-      if (lastY === undefined || marker.yPct - lastY >= minGapPct) {
+      if (lastY === undefined || placedY - lastY >= minGapPct) {
         lane = i;
         break;
       }
     }
-
     if (lane === -1) {
       marker.labelEl.style.display = "none";
       return;
     }
-
-    lanes[lane] = marker.yPct;
+    const offsetPx = laneOffsetsPx[lane];
+    const offsetPct = (offsetPx / chartHeight) * 100;
+    lanes[lane] = marker.yPct + offsetPct;
     marker.labelEl.style.display = "";
-    marker.labelEl.style.top = "50%";
-    marker.labelEl.style.left = `${42 + lane * 64}px`;
+    marker.labelEl.style.top = `calc(50% + ${offsetPx}px)`;
+    marker.labelEl.style.left = `${baseOffsetPx}px`;
     marker.labelEl.style.transform = "translateY(-50%)";
   });
 }
@@ -685,7 +706,7 @@ function draw(state, motionDetails, depthContext, eclipseContext = { solarEclips
   const sunDist = depthContext?.distances?.sun ?? 1;
   const moonLat = depthContext?.moonLat ?? 90;
   const chartWidth = Math.max(planetLayerEl.clientWidth, 1);
-  const mobile = globalThis.matchMedia?.("(max-width: 640px)").matches ?? false;
+  const mobile = isMobileViewport();
   const sunDiameterPx = mobile ? 49 : 55;
   const planetDiameterPx = mobile ? 29 : 31;
   const overlapThresholdDeg = Math.max(
@@ -840,11 +861,12 @@ function parseCenterSignParam(params, key, fallbackIndex) {
 }
 
 function parseViewOptionsFromParams(params) {
+  const defaultFlip = isPortraitMobileViewport();
   return {
     stars: parseBoolParam(params, "stars", DEFAULT_VIEW_OPTIONS.stars),
     labels: parseBoolParam(params, "labels", DEFAULT_VIEW_OPTIONS.labels),
     drift: parseBoolParam(params, "drift", DEFAULT_VIEW_OPTIONS.drift),
-    flip: parseBoolParam(params, "flip", DEFAULT_VIEW_OPTIONS.flip),
+    flip: parseBoolParam(params, "flip", defaultFlip),
     lock: parseBoolParam(params, "lock", DEFAULT_VIEW_OPTIONS.lock),
     centerSign: parseCenterSignParam(params, "center", DEFAULT_VIEW_OPTIONS.centerSign),
     travel: parseBoolParam(params, "travel", DEFAULT_VIEW_OPTIONS.travel),
@@ -937,6 +959,7 @@ function applyDisplayOptions() {
     globalThis.document.body.classList.toggle("flip-mode", viewOptions.flip);
     globalThis.document.body.classList.toggle("controls-right", !viewOptions.flip);
     globalThis.document.body.classList.toggle("zodiac-locked", viewOptions.lock);
+    globalThis.document.body.classList.toggle("mobile-immersive", isPortraitMobileViewport());
   }
   if (centerSignSelectEl) {
     centerSignSelectEl.disabled = !viewOptions.lock;
@@ -1082,8 +1105,10 @@ function shiftViewDate(amount, unit) {
 const KEYBOARD_STEP_UNITS = ["minute", "hour", "day", "week", "month", "year"];
 let selectedStepUnit = "day";
 const WHEEL_TRAVEL_THRESHOLD = 24;
+const DRAG_TRAVEL_THRESHOLD = 22;
 let wheelTravelAccumulator = 0;
 let wheelTravelDirection = 0;
+let dragTravelState = null;
 const OPTION_SHORTCUTS = Object.freeze({
   s: "stars",
   l: "labels",
@@ -1132,6 +1157,13 @@ function isEditableTarget(target) {
   if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
   if (target.isContentEditable) return true;
   return Boolean(target.closest("[contenteditable='true']"));
+}
+
+function isOverlayTarget(target) {
+  if (!(target instanceof Node)) return false;
+  return Boolean(
+    optionsPanelEl?.contains(target) || timeControlsEl?.contains(target) || optionsToggleEl?.contains(target),
+  );
 }
 
 function render({ syncUrl = false } = {}) {
@@ -1226,12 +1258,7 @@ function handleWheelTimeTravel(event) {
   if (event.altKey || event.ctrlKey || event.metaKey) return;
   if (isEditableTarget(event.target)) return;
 
-  const target = event.target;
-  if (target instanceof Node) {
-    if (optionsPanelEl?.contains(target) || timeControlsEl?.contains(target)) {
-      return;
-    }
-  }
+  if (isOverlayTarget(event.target)) return;
 
   const delta = normalizedWheelDelta(event);
   if (!Number.isFinite(delta) || Math.abs(delta) < 0.01) return;
@@ -1254,6 +1281,96 @@ function handleWheelTimeTravel(event) {
 
 if (globalThis.document) {
   globalThis.document.addEventListener("wheel", handleWheelTimeTravel, { passive: false });
+}
+
+function handleDragTravelStart(event) {
+  if (!chartEl) return;
+  if (dragTravelState) return;
+  if (event.pointerType === "mouse" && event.button !== 0) return;
+  if (isEditableTarget(event.target) || isOverlayTarget(event.target)) return;
+  if (event.target instanceof Node && !chartEl.contains(event.target)) return;
+
+  dragTravelState = {
+    pointerId: event.pointerId,
+    lastX: event.clientX,
+    lastY: event.clientY,
+    carry: 0,
+    flipped: viewOptions.flip,
+  };
+
+  if (typeof chartEl.setPointerCapture === "function") {
+    chartEl.setPointerCapture(event.pointerId);
+  }
+  globalThis.document?.body?.classList.add("is-time-dragging");
+  if (event.cancelable) event.preventDefault();
+}
+
+function handleDragTravelMove(event) {
+  if (!dragTravelState || event.pointerId !== dragTravelState.pointerId) return;
+
+  const deltaX = event.clientX - dragTravelState.lastX;
+  const deltaY = event.clientY - dragTravelState.lastY;
+  const axisDelta = dragTravelState.flipped ? -deltaY : deltaX;
+
+  dragTravelState.lastX = event.clientX;
+  dragTravelState.lastY = event.clientY;
+  if (!Number.isFinite(axisDelta) || Math.abs(axisDelta) < 0.01) return;
+
+  dragTravelState.carry += axisDelta;
+  const steps = Math.trunc(Math.abs(dragTravelState.carry) / DRAG_TRAVEL_THRESHOLD);
+  if (steps < 1) {
+    if (event.cancelable) event.preventDefault();
+    return;
+  }
+
+  const direction = dragTravelState.carry > 0 ? 1 : -1;
+  dragTravelState.carry -= direction * steps * DRAG_TRAVEL_THRESHOLD;
+  shiftViewDate(direction * steps, selectedStepUnit);
+  render({ syncUrl: true });
+  if (event.cancelable) event.preventDefault();
+}
+
+function endDragTimeTravel(pointerId) {
+  if (!dragTravelState) return;
+  if (pointerId !== undefined && pointerId !== dragTravelState.pointerId) return;
+  dragTravelState = null;
+  globalThis.document?.body?.classList.remove("is-time-dragging");
+}
+
+if (chartEl) {
+  chartEl.addEventListener("pointerdown", handleDragTravelStart);
+  chartEl.addEventListener("pointermove", handleDragTravelMove);
+  chartEl.addEventListener("pointerup", (event) => {
+    endDragTimeTravel(event.pointerId);
+  });
+  chartEl.addEventListener("pointercancel", (event) => {
+    endDragTimeTravel(event.pointerId);
+  });
+  chartEl.addEventListener("lostpointercapture", () => {
+    endDragTimeTravel();
+  });
+}
+
+function setupMobileGestureLocks() {
+  if (!globalThis.document) return;
+  if (!mediaMatches("(pointer: coarse)")) return;
+
+  const preventPinch = (event) => {
+    if (event.cancelable) event.preventDefault();
+  };
+
+  globalThis.document.addEventListener("gesturestart", preventPinch, { passive: false });
+  globalThis.document.addEventListener("gesturechange", preventPinch, { passive: false });
+  globalThis.document.addEventListener("gestureend", preventPinch, { passive: false });
+  globalThis.document.addEventListener(
+    "touchmove",
+    (event) => {
+      if (event.touches.length > 1 && event.cancelable) {
+        event.preventDefault();
+      }
+    },
+    { passive: false },
+  );
 }
 
 if (optionsToggleEl && optionsPanelEl) {
@@ -1294,6 +1411,7 @@ syncOptionsUi();
 setSelectedStepUnit(selectedStepUnit);
 setOptionsPanelOpen(false);
 setupStarfield();
+setupMobileGestureLocks();
 render();
 setInterval(() => {
   viewDate = new Date(viewDate.getTime() + 1000);
