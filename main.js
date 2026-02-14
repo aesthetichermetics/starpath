@@ -859,7 +859,7 @@ function applyDisplayOptions() {
     timeControlsEl.style.display = viewOptions.travel ? "" : "none";
   }
   if (timestampEl) {
-    timestampEl.style.display = viewOptions.showTime ? "" : "none";
+    timestampEl.style.visibility = viewOptions.showTime ? "visible" : "hidden";
   }
   if (globalThis.document?.body) {
     globalThis.document.body.classList.toggle("flip-mode", viewOptions.flip);
@@ -1007,6 +1007,43 @@ function shiftViewDate(amount, unit) {
   viewDate = next;
 }
 
+const KEYBOARD_STEP_UNITS = ["minute", "hour", "day", "week", "month", "year"];
+let selectedStepUnit = "day";
+const OPTION_SHORTCUTS = Object.freeze({
+  s: "stars",
+  l: "labels",
+  g: "drift",
+  f: "flip",
+  k: "lock",
+  t: "travel",
+  d: "showTime",
+});
+
+function setSelectedStepUnit(nextUnit) {
+  if (!KEYBOARD_STEP_UNITS.includes(nextUnit)) return;
+  selectedStepUnit = nextUnit;
+  timeButtons.forEach((button) => {
+    const step = button.dataset.step || "";
+    const active = step === `-1-${nextUnit}` || step === `1-${nextUnit}`;
+    button.classList.toggle("time-btn--step-active", active);
+  });
+}
+
+function shiftSelectedStepUnit(direction) {
+  const currentIndex = KEYBOARD_STEP_UNITS.indexOf(selectedStepUnit);
+  const safeIndex = currentIndex === -1 ? KEYBOARD_STEP_UNITS.indexOf("day") : currentIndex;
+  const nextIndex = Math.max(0, Math.min(KEYBOARD_STEP_UNITS.length - 1, safeIndex + direction));
+  setSelectedStepUnit(KEYBOARD_STEP_UNITS[nextIndex]);
+}
+
+function toggleBooleanOption(optionKey) {
+  if (!optionKey || !(optionKey in DEFAULT_VIEW_OPTIONS)) return false;
+  if (typeof DEFAULT_VIEW_OPTIONS[optionKey] !== "boolean") return false;
+  viewOptions = { ...viewOptions, [optionKey]: !viewOptions[optionKey] };
+  render();
+  return true;
+}
+
 function isEditableTarget(target) {
   if (!(target instanceof HTMLElement)) return false;
   const tag = target.tagName;
@@ -1030,6 +1067,7 @@ function render() {
   } else {
     clearStarfield();
   }
+  syncOptionsUi();
   syncStateToUrl(viewDate, viewOptions);
   const iso = viewDate.toISOString().replace("T", " ");
   timestampEl.textContent = `UTC ${iso.slice(0, 16)}`;
@@ -1047,6 +1085,7 @@ timeButtons.forEach((button) => {
     if (!match) return;
     const amount = Number(match[1]);
     const unit = match[2];
+    setSelectedStepUnit(unit);
     shiftViewDate(amount, unit);
     render();
   });
@@ -1064,12 +1103,37 @@ optionInputs.forEach((input) => {
 
 globalThis.addEventListener("keydown", (event) => {
   if (event.defaultPrevented) return;
-  if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
   if (event.altKey || event.ctrlKey || event.metaKey) return;
   if (isEditableTarget(event.target)) return;
 
+  const key = event.key.toLowerCase();
+  const optionKey = OPTION_SHORTCUTS[key];
+  if (optionKey) {
+    if (event.repeat) return;
+    event.preventDefault();
+    toggleBooleanOption(optionKey);
+    return;
+  }
+
+  if (
+    event.key !== "ArrowLeft" &&
+    event.key !== "ArrowRight" &&
+    event.key !== "ArrowUp" &&
+    event.key !== "ArrowDown"
+  ) {
+    return;
+  }
+
   event.preventDefault();
-  shiftViewDate(event.key === "ArrowRight" ? 1 : -1, "day");
+  if (event.key === "ArrowUp") {
+    shiftSelectedStepUnit(1);
+    return;
+  }
+  if (event.key === "ArrowDown") {
+    shiftSelectedStepUnit(-1);
+    return;
+  }
+  shiftViewDate(event.key === "ArrowRight" ? 1 : -1, selectedStepUnit);
   render();
 });
 
@@ -1108,6 +1172,7 @@ globalThis.addEventListener("popstate", () => {
 setupCenterSignSelect();
 viewOptions = normalizeViewOptions(viewOptions);
 syncOptionsUi();
+setSelectedStepUnit(selectedStepUnit);
 setOptionsPanelOpen(false);
 setupStarfield();
 render();
