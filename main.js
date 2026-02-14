@@ -64,7 +64,7 @@ const DEFAULT_VIEW_OPTIONS = {
   flip: false,
   lock: false,
   centerSign: 0,
-  travel: true,
+  travel: false,
   showTime: true,
 };
 
