@@ -887,7 +887,7 @@ if (centerSignSelectEl) {
     const nextIndex = Number(centerSignSelectEl.value);
     if (!Number.isInteger(nextIndex) || nextIndex < 0 || nextIndex >= SIGNS.length) return;
     viewOptions = { ...viewOptions, centerSign: nextIndex };
-    render();
+    render({ syncUrl: true });
   });
 }
 
@@ -1050,7 +1050,7 @@ function toggleBooleanOption(optionKey) {
   if (!optionKey || !(optionKey in DEFAULT_VIEW_OPTIONS)) return false;
   if (typeof DEFAULT_VIEW_OPTIONS[optionKey] !== "boolean") return false;
   viewOptions = { ...viewOptions, [optionKey]: !viewOptions[optionKey] };
-  render();
+  render({ syncUrl: true });
   return true;
 }
 
@@ -1062,7 +1062,7 @@ function isEditableTarget(target) {
   return Boolean(target.closest("[contenteditable='true']"));
 }
 
-function render() {
+function render({ syncUrl = false } = {}) {
   const snapshot = motionSnapshot(viewDate);
   const depthContext = geocentricDepthContext(viewDate);
   draw(snapshot.nowState, snapshot.details, depthContext);
@@ -1078,7 +1078,9 @@ function render() {
     clearStarfield();
   }
   syncOptionsUi();
-  syncStateToUrl(viewDate, viewOptions);
+  if (syncUrl) {
+    syncStateToUrl(viewDate, viewOptions);
+  }
   const iso = viewDate.toISOString().replace("T", " ");
   timestampEl.textContent = `UTC ${iso.slice(0, 16)}`;
 }
@@ -1088,7 +1090,7 @@ timeButtons.forEach((button) => {
     const step = button.dataset.step || "";
     if (step === "now") {
       viewDate = new Date();
-      render();
+      render({ syncUrl: true });
       return;
     }
     const match = step.match(/^([+-]?\d+)-(minute|hour|day|week|month|year)$/);
@@ -1097,7 +1099,7 @@ timeButtons.forEach((button) => {
     const unit = match[2];
     setSelectedStepUnit(unit);
     shiftViewDate(amount, unit);
-    render();
+    render({ syncUrl: true });
   });
 });
 
@@ -1107,7 +1109,7 @@ optionInputs.forEach((input) => {
     if (!key || !(key in DEFAULT_VIEW_OPTIONS)) return;
     if (typeof DEFAULT_VIEW_OPTIONS[key] !== "boolean") return;
     viewOptions = { ...viewOptions, [key]: input.checked };
-    render();
+    render({ syncUrl: true });
   });
 });
 
@@ -1144,7 +1146,7 @@ globalThis.addEventListener("keydown", (event) => {
     return;
   }
   shiftViewDate(event.key === "ArrowRight" ? 1 : -1, selectedStepUnit);
-  render();
+  render({ syncUrl: true });
 });
 
 function handleWheelTimeTravel(event) {
@@ -1174,7 +1176,7 @@ function handleWheelTimeTravel(event) {
   event.preventDefault();
   wheelTravelAccumulator -= steps * WHEEL_TRAVEL_THRESHOLD;
   shiftViewDate(direction * steps, selectedStepUnit);
-  render();
+  render({ syncUrl: true });
 }
 
 if (globalThis.document) {
