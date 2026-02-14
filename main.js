@@ -361,6 +361,60 @@ function geocentricDepthContext(date = new Date()) {
   return { distances, moonLat };
 }
 
+/**
+ * Detects if the given date falls within or near a solar or lunar eclipse.
+ * Uses astronomy-engine SearchGlobalSolarEclipse / SearchLunarEclipse.
+ * Returns eclipse context for UI and display.
+ */
+function eclipseContext(date = new Date()) {
+  const A = globalThis.Astronomy;
+  if (!A?.SearchGlobalSolarEclipse || !A?.SearchLunarEclipse || !A?.MakeTime) {
+    return { solarEclipse: null, lunarEclipse: null };
+  }
+
+  const viewAstro = A.MakeTime(date);
+  const viewUt = viewAstro.ut;
+
+  let solarEclipse = null;
+  let lunarEclipse = null;
+
+  // Solar: search from ~2 weeks back; eclipse peak within ~12 hours = we're in it
+  try {
+    const searchStart = new Date(date.getTime() - 20 * 24 * 60 * 60 * 1000);
+    const solar = A.SearchGlobalSolarEclipse(searchStart);
+    const peakDaysDiff = Math.abs(solar.peak.ut - viewUt);
+    if (peakDaysDiff < 0.5) {
+      solarEclipse = {
+        kind: solar.kind,
+        peak: solar.peak.date,
+        obscuration: solar.obscuration,
+      };
+    }
+  } catch (_) {
+    /* no solar eclipse in range */
+  }
+
+  // Lunar: search from ~2 weeks back; use sd_penum to define eclipse window
+  try {
+    const searchStart = new Date(date.getTime() - 20 * 24 * 60 * 60 * 1000);
+    const lunar = A.SearchLunarEclipse(searchStart);
+    const windowMinutes = lunar.sd_penum || 60;
+    const windowDays = windowMinutes / (60 * 24);
+    const peakDaysDiff = Math.abs(lunar.peak.ut - viewUt);
+    if (peakDaysDiff < windowDays) {
+      lunarEclipse = {
+        kind: lunar.kind,
+        peak: lunar.peak.date,
+        obscuration: lunar.obscuration,
+      };
+    }
+  } catch (_) {
+    /* no lunar eclipse in range */
+  }
+
+  return { solarEclipse, lunarEclipse };
+}
+
 function zodiacSignFromLongitude(lon) {
   const index = Math.floor(normalizeAngle(lon) / 30) % 12;
   return SIGNS[index];
@@ -620,7 +674,7 @@ function renderTrend(baseDate, currentState, options) {
   }
 }
 
-function draw(state, motionDetails, depthContext) {
+function draw(state, motionDetails, depthContext, eclipseContext = { solarEclipse: null, lunarEclipse: null }) {
   const sunLon = state.sun;
   const referenceLon = referenceLongitudeForState(state, viewOptions);
   const markers = [];
@@ -671,7 +725,12 @@ function draw(state, motionDetails, depthContext) {
     const rel = signedDelta(lon, referenceLon);
 
     const planetEl = document.createElement("div");
-    planetEl.className = `planet ${body.className ? `planet--${body.className}` : ""}`;
+    let planetClass = `planet ${body.className ? `planet--${body.className}` : ""}`;
+    if (body.id === "moon" && eclipseContext) {
+      if (eclipseContext.solarEclipse) planetClass += " planet--solar-eclipse";
+      if (eclipseContext.lunarEclipse) planetClass += " planet--lunar-eclipse";
+    }
+    planetEl.className = planetClass;
     if (flipped) {
       planetEl.style.left = "50%";
       planetEl.style.top = `${relToY(rel)}%`;
@@ -679,7 +738,20 @@ function draw(state, motionDetails, depthContext) {
       planetEl.style.left = `${relToX(rel)}%`;
       planetEl.style.top = "50%";
     }
-    planetEl.title = `${body.name} (${motionDetails[body.id].directionIcon})`;
+    let title = `${body.name} (${motionDetails[body.id].directionIcon})`;
+    if (body.id === "moon" && eclipseContext) {
+      const parts = [];
+      if (eclipseContext.solarEclipse) {
+        const k = eclipseContext.solarEclipse.kind;
+        parts.push(`Solar eclipse (${k})`);
+      }
+      if (eclipseContext.lunarEclipse) {
+        const k = eclipseContext.lunarEclipse.kind;
+        parts.push(`Lunar eclipse (${k})`);
+      }
+      if (parts.length) title += ` · ${parts.join(" · ")}`;
+    }
+    planetEl.title = title;
 
     if (body.id === "sun") {
       planetEl.style.zIndex = "12";
@@ -1065,7 +1137,8 @@ function isEditableTarget(target) {
 function render({ syncUrl = false } = {}) {
   const snapshot = motionSnapshot(viewDate);
   const depthContext = geocentricDepthContext(viewDate);
-  draw(snapshot.nowState, snapshot.details, depthContext);
+  const eclipse = eclipseContext(viewDate);
+  draw(snapshot.nowState, snapshot.details, depthContext, eclipse);
   if (viewOptions.drift) {
     renderTrend(viewDate, snapshot.nowState, viewOptions);
   } else if (trendSvgEl) {
