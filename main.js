@@ -59,6 +59,10 @@ const TREND_COLORS = {
 const TREND_WINDOW_DAYS = 30;
 const TREND_STEP_HOURS = 12;
 const MOBILE_MEDIA_QUERY = "(max-width: 640px)";
+const AU_KM = 149597870.7;
+const SUN_RADIUS_KM = 695700;
+const MOON_RADIUS_KM = 1737.4;
+const EARTH_RADIUS_KM = 6378.137;
 
 function mediaMatches(query) {
   return globalThis.matchMedia?.(query).matches ?? false;
@@ -461,6 +465,25 @@ function relToY(rel) {
   return ((rel + 180) / 360) * 100;
 }
 
+function apparentAngularRadiusDeg(radiusKm, distanceAu) {
+  if (!Number.isFinite(distanceAu) || distanceAu <= 0) return 0;
+  const ratio = radiusKm / (distanceAu * AU_KM);
+  const clamped = Math.max(-1, Math.min(1, ratio));
+  return toDeg(Math.asin(clamped));
+}
+
+function angularSeparationDeg(lonA, latA, lonB, latB) {
+  const lonARad = toRad(lonA);
+  const latARad = toRad(latA);
+  const lonBRad = toRad(lonB);
+  const latBRad = toRad(latB);
+  const cosSep =
+    Math.sin(latARad) * Math.sin(latBRad) +
+    Math.cos(latARad) * Math.cos(latBRad) * Math.cos(lonARad - lonBRad);
+  const clamped = Math.max(-1, Math.min(1, cosSep));
+  return toDeg(Math.acos(clamped));
+}
+
 function motionIcon(speed) {
   if (Math.abs(speed) < 0.005) return "•";
   return speed > 0 ? ">" : "<";
@@ -785,8 +808,17 @@ function draw(state, motionDetails, depthContext, eclipseContext = { solarEclips
         if (body.id === "mercury" || body.id === "venus") {
           frontOfSun = isCloserThanSun;
         } else if (body.id === "moon") {
-          // Keep Moon in front only near eclipse-like alignment, otherwise behind.
-          frontOfSun = isCloserThanSun && Math.abs(moonLat) < 0.9;
+          // Include lunar parallax so eclipse days (topocentric) don't fail geocentric overlap tests.
+          const sunDistanceAu = depthContext?.distances?.sun;
+          const moonDistanceAu = depthContext?.distances?.moon;
+          const sunRadiusDeg = apparentAngularRadiusDeg(SUN_RADIUS_KM, sunDistanceAu);
+          const moonRadiusDeg = apparentAngularRadiusDeg(MOON_RADIUS_KM, moonDistanceAu);
+          const moonParallaxDeg = apparentAngularRadiusDeg(EARTH_RADIUS_KM, moonDistanceAu);
+          const centerSeparationDeg = angularSeparationDeg(lon, moonLat, sunLon, 0);
+          const overlapReachDeg = sunRadiusDeg + moonRadiusDeg + moonParallaxDeg;
+          const eclipseBoostDeg = eclipseContext?.solarEclipse ? 0.42 : 0;
+          const displayMarginDeg = 0.03 + eclipseBoostDeg;
+          frontOfSun = isCloserThanSun && centerSeparationDeg <= overlapReachDeg + displayMarginDeg;
         }
       }
       planetEl.style.zIndex = frontOfSun ? "14" : "9";

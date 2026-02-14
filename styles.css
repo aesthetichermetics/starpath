@@ -1,11 +1,14 @@
 :root {
-  --bg-0: #040507;
-  --bg-1: #0b0f18;
+  --bg-0: #000000;
+  --bg-1: #000000;
   --text: #f0f2f7;
   --muted: #b5bccd;
   --line: rgba(240, 242, 247, 0.28);
   --line-strong: rgba(240, 242, 247, 0.64);
   --accent: #ffd98d;
+  --ui-surface: rgba(0, 0, 0, 0.76);
+  --ui-surface-strong: rgba(0, 0, 0, 0.9);
+  --ui-surface-hover: rgba(20, 20, 20, 0.86);
 }
 
 * {
@@ -17,8 +20,8 @@ body {
   margin: 0;
   min-height: 100%;
   height: 100%;
-  background-color: #000;
-  background: linear-gradient(180deg, #090d14 0%, #04050a 100%);
+  background-color: var(--bg-0);
+  background: #000;
   color: var(--text);
   font-family: "Avenir Next", "Segoe UI", sans-serif;
   overscroll-behavior: none;
@@ -42,7 +45,7 @@ body {
   height: 2.15rem;
   border: 1px solid rgba(240, 242, 247, 0.28);
   border-radius: 0.5rem;
-  background: rgba(7, 11, 17, 0.72);
+  background: var(--ui-surface);
   color: var(--text);
   font: inherit;
   font-size: 1rem;
@@ -50,8 +53,8 @@ body {
 }
 
 .options-toggle:hover {
-  border-color: rgba(177, 215, 255, 0.55);
-  background: rgba(18, 31, 48, 0.72);
+  border-color: rgba(240, 242, 247, 0.52);
+  background: var(--ui-surface-hover);
 }
 
 .options-panel {
@@ -62,7 +65,7 @@ body {
   min-width: 11rem;
   border: 1px solid rgba(240, 242, 247, 0.22);
   border-radius: 0.6rem;
-  background: rgba(6, 10, 18, 0.9);
+  background: var(--ui-surface-strong);
   padding: 0.55rem 0.65rem;
   backdrop-filter: blur(6px);
 }
@@ -92,7 +95,7 @@ body {
   min-width: 6.9rem;
   border: 1px solid rgba(240, 242, 247, 0.24);
   border-radius: 0.4rem;
-  background: rgba(8, 13, 21, 0.78);
+  background: var(--ui-surface);
   color: var(--text);
   font: inherit;
   font-size: 0.79rem;
@@ -407,7 +410,7 @@ body.controls-right .time-controls {
   border-radius: 0.5rem;
   padding: 0.52rem 0.6rem;
   color: var(--text);
-  background: rgba(7, 11, 17, 0.52);
+  background: var(--ui-surface);
   font: inherit;
   font-size: 0.92rem;
   letter-spacing: 0.02em;
@@ -422,8 +425,8 @@ body.controls-right .time-btn {
 }
 
 .time-btn:hover {
-  border-color: rgba(177, 215, 255, 0.55);
-  background: rgba(18, 31, 48, 0.55);
+  border-color: rgba(240, 242, 247, 0.52);
+  background: var(--ui-surface-hover);
 }
 
 .time-btn--step-active {
@@ -444,7 +447,7 @@ body.controls-right .time-btn {
 
 .time-btn--now {
   border-color: rgba(255, 219, 149, 0.5);
-  background: rgba(48, 36, 14, 0.45);
+  background: rgba(22, 16, 6, 0.72);
 }
 
 body.is-time-dragging {
