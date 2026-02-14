@@ -901,7 +901,7 @@ function parseViewOptionsFromParams(params) {
     flip: parseBoolParam(params, "flip", defaultFlip),
     lock: parseBoolParam(params, "lock", DEFAULT_VIEW_OPTIONS.lock),
     centerSign: parseCenterSignParam(params, "center", DEFAULT_VIEW_OPTIONS.centerSign),
-    travel: parseBoolParam(params, "travel", DEFAULT_VIEW_OPTIONS.travel),
+    travel: DEFAULT_VIEW_OPTIONS.travel,
     showTime: parseBoolParam(params, "showtime", DEFAULT_VIEW_OPTIONS.showTime),
   };
 }
@@ -974,6 +974,10 @@ function syncOptionsUi() {
   }
 }
 
+function shouldShowTimeControls(options = viewOptions) {
+  return Boolean(options?.travel) && !isPortraitMobileViewport();
+}
+
 function applyDisplayOptions() {
   if (starfieldEl) {
     starfieldEl.style.display = viewOptions.stars ? "block" : "none";
@@ -982,7 +986,7 @@ function applyDisplayOptions() {
     chartWaveEl.style.display = viewOptions.drift ? "block" : "none";
   }
   if (timeControlsEl) {
-    timeControlsEl.style.display = viewOptions.travel ? "" : "none";
+    timeControlsEl.hidden = !shouldShowTimeControls(viewOptions);
   }
   if (timestampEl) {
     timestampEl.style.visibility = viewOptions.showTime ? "visible" : "hidden";
@@ -1442,6 +1446,7 @@ viewOptions = normalizeViewOptions(viewOptions);
 syncOptionsUi();
 setSelectedStepUnit(selectedStepUnit);
 setOptionsPanelOpen(false);
+applyDisplayOptions();
 setupStarfield();
 setupMobileGestureLocks();
 render();
