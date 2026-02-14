@@ -65,6 +65,7 @@ const DEFAULT_VIEW_OPTIONS = {
   lock: false,
   centerSign: 0,
   travel: true,
+  showTime: true,
 };
 
 const SIGN_NAME_TO_INDEX = new Map(
@@ -775,6 +776,7 @@ function parseViewOptionsFromParams(params) {
     lock: parseBoolParam(params, "lock", DEFAULT_VIEW_OPTIONS.lock),
     centerSign: parseCenterSignParam(params, "center", DEFAULT_VIEW_OPTIONS.centerSign),
     travel: parseBoolParam(params, "travel", DEFAULT_VIEW_OPTIONS.travel),
+    showTime: parseBoolParam(params, "showtime", DEFAULT_VIEW_OPTIONS.showTime),
   };
 }
 
@@ -798,6 +800,7 @@ function syncStateToUrl(date, options) {
     lock: options.lock ? "1" : "0",
     center: centerSign,
     travel: options.travel ? "1" : "0",
+    showtime: options.showTime ? "1" : "0",
   };
 
   let changed = false;
@@ -854,6 +857,9 @@ function applyDisplayOptions() {
   }
   if (timeControlsEl) {
     timeControlsEl.style.display = viewOptions.travel ? "" : "none";
+  }
+  if (timestampEl) {
+    timestampEl.style.display = viewOptions.showTime ? "" : "none";
   }
   if (globalThis.document?.body) {
     globalThis.document.body.classList.toggle("flip-mode", viewOptions.flip);
@@ -1001,6 +1007,14 @@ function shiftViewDate(amount, unit) {
   viewDate = next;
 }
 
+function isEditableTarget(target) {
+  if (!(target instanceof HTMLElement)) return false;
+  const tag = target.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+  if (target.isContentEditable) return true;
+  return Boolean(target.closest("[contenteditable='true']"));
+}
+
 function render() {
   const snapshot = motionSnapshot(viewDate);
   const depthContext = geocentricDepthContext(viewDate);
@@ -1046,6 +1060,17 @@ optionInputs.forEach((input) => {
     viewOptions = { ...viewOptions, [key]: input.checked };
     render();
   });
+});
+
+globalThis.addEventListener("keydown", (event) => {
+  if (event.defaultPrevented) return;
+  if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+  if (event.altKey || event.ctrlKey || event.metaKey) return;
+  if (isEditableTarget(event.target)) return;
+
+  event.preventDefault();
+  shiftViewDate(event.key === "ArrowRight" ? 1 : -1, "day");
+  render();
 });
 
 if (optionsToggleEl && optionsPanelEl) {

@@ -99,9 +99,9 @@ body {
 .app {
   position: relative;
   z-index: 1;
-  width: min(1150px, 96vw);
-  margin: 0 auto;
-  padding: 1rem 1.2rem;
+  width: 100vw;
+  margin: 0;
+  padding: 1rem 0.75rem;
   height: 100vh;
   display: grid;
   grid-template-rows: 1fr auto auto;
@@ -110,13 +110,6 @@ body {
 
 body.controls-right .app {
   grid-template-rows: 1fr auto;
-}
-
-body.flip-mode .app {
-  width: 100vw;
-  margin: 0;
-  padding-left: 0.75rem;
-  padding-right: 0.75rem;
 }
 
 .app__header h1 {
