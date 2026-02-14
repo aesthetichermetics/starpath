@@ -7,26 +7,72 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
+    <canvas id="starfield" aria-hidden="true"></canvas>
+    <button
+      class="options-toggle"
+      id="options-toggle"
+      type="button"
+      aria-label="Display options"
+      aria-controls="options-panel"
+      aria-expanded="false"
+    >
+      ⚙
+    </button>
+    <section class="options-panel" id="options-panel" hidden>
+      <label class="options-item">
+        <input type="checkbox" id="opt-stars" data-option="stars" />
+        <span>Stars</span>
+      </label>
+      <label class="options-item">
+        <input type="checkbox" id="opt-labels" data-option="labels" />
+        <span>Planet Labels</span>
+      </label>
+      <label class="options-item">
+        <input type="checkbox" id="opt-drift" data-option="drift" />
+        <span>Drift</span>
+      </label>
+      <label class="options-item">
+        <input type="checkbox" id="opt-flip" data-option="flip" />
+        <span>Flip</span>
+      </label>
+      <label class="options-item">
+        <input type="checkbox" id="opt-lock" data-option="lock" />
+        <span>Lock Zodiac</span>
+      </label>
+      <label class="options-item options-item--sub">
+        <span>Center Sign</span>
+        <select id="opt-center-sign" aria-label="Center sign"></select>
+      </label>
+      <label class="options-item">
+        <input type="checkbox" id="opt-travel" data-option="travel" />
+        <span>Time Travel</span>
+      </label>
+    </section>
     <main class="app">
       <section class="chart" aria-label="Linear zodiac chart">
+        <div class="chart-wave" id="chart-wave" aria-hidden="true">
+          <svg id="trend-svg" viewBox="0 0 1200 620" preserveAspectRatio="none"></svg>
+        </div>
         <div class="zodiac-band" id="zodiac-band"></div>
         <div class="axis" id="axis">
           <div class="axis-line"></div>
         </div>
         <div class="planet-layer" id="planet-layer"></div>
       </section>
-
-      <aside class="legend" id="legend"></aside>
-      <section class="time-controls" aria-label="Time navigation">
-        <button class="time-btn" data-step="-1-year">-1 Year</button>
-        <button class="time-btn" data-step="-1-month">-1 Month</button>
-        <button class="time-btn" data-step="-1-week">-1 Week</button>
-        <button class="time-btn" data-step="-1-day">-1 Day</button>
+      <section class="time-controls" id="time-controls" aria-label="Time navigation">
+        <button class="time-btn" data-step="-1-year">- Year</button>
+        <button class="time-btn" data-step="-1-month">- Month</button>
+        <button class="time-btn" data-step="-1-week">- Week</button>
+        <button class="time-btn" data-step="-1-day">- Day</button>
+        <button class="time-btn" data-step="-1-hour">- Hour</button>
+        <button class="time-btn" data-step="-1-minute">- Min</button>
         <button class="time-btn time-btn--now" data-step="now">Now</button>
-        <button class="time-btn" data-step="1-day">+1 Day</button>
-        <button class="time-btn" data-step="1-week">+1 Week</button>
-        <button class="time-btn" data-step="1-month">+1 Month</button>
-        <button class="time-btn" data-step="1-year">+1 Year</button>
+        <button class="time-btn" data-step="1-minute">+ Min</button>
+        <button class="time-btn" data-step="1-hour">+ Hour</button>
+        <button class="time-btn" data-step="1-day">+ Day</button>
+        <button class="time-btn" data-step="1-week">+ Week</button>
+        <button class="time-btn" data-step="1-month">+ Month</button>
+        <button class="time-btn" data-step="1-year">+ Year</button>
       </section>
       <p class="timestamp" id="timestamp"></p>
     </main>

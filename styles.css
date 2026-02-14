@@ -16,22 +16,107 @@ html,
 body {
   margin: 0;
   min-height: 100%;
-  background:
-    radial-gradient(circle at 15% 20%, rgba(57, 102, 178, 0.22), transparent 40%),
-    radial-gradient(circle at 85% 0%, rgba(181, 102, 72, 0.18), transparent 44%),
-    linear-gradient(180deg, var(--bg-1), var(--bg-0));
+  background: linear-gradient(180deg, #090d14 0%, #04050a 100%);
   color: var(--text);
   font-family: "Avenir Next", "Segoe UI", sans-serif;
 }
 
+#starfield {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.options-toggle {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 6;
+  width: 2.15rem;
+  height: 2.15rem;
+  border: 1px solid rgba(240, 242, 247, 0.28);
+  border-radius: 0.5rem;
+  background: rgba(7, 11, 17, 0.72);
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.options-toggle:hover {
+  border-color: rgba(177, 215, 255, 0.55);
+  background: rgba(18, 31, 48, 0.72);
+}
+
+.options-panel {
+  position: fixed;
+  top: 3.2rem;
+  left: 0.75rem;
+  z-index: 6;
+  min-width: 11rem;
+  border: 1px solid rgba(240, 242, 247, 0.22);
+  border-radius: 0.6rem;
+  background: rgba(6, 10, 18, 0.9);
+  padding: 0.55rem 0.65rem;
+  backdrop-filter: blur(6px);
+}
+
+.options-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.84rem;
+  color: var(--text);
+}
+
+.options-item + .options-item {
+  margin-top: 0.4rem;
+}
+
+.options-item--sub {
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.options-item--sub select {
+  min-width: 6.9rem;
+  border: 1px solid rgba(240, 242, 247, 0.24);
+  border-radius: 0.4rem;
+  background: rgba(8, 13, 21, 0.78);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.79rem;
+  padding: 0.22rem 0.38rem;
+}
+
+.options-item--sub select:disabled {
+  opacity: 0.5;
+}
+
 .app {
+  position: relative;
+  z-index: 1;
   width: min(1150px, 96vw);
   margin: 0 auto;
   padding: 1rem 1.2rem;
   height: 100vh;
   display: grid;
-  grid-template-rows: 1fr auto auto auto;
+  grid-template-rows: 1fr auto auto;
   gap: 0.8rem;
+}
+
+body.controls-right .app {
+  grid-template-rows: 1fr auto;
+}
+
+body.flip-mode .app {
+  width: 100vw;
+  margin: 0;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
 }
 
 .app__header h1 {
@@ -58,6 +143,46 @@ body {
   position: relative;
   min-height: 0;
   padding: 0;
+  overflow: hidden;
+}
+
+.chart-wave {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.86;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 0, 0, 0.85) 18%,
+    rgba(0, 0, 0, 0.85) 82%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 0, 0, 0.85) 18%,
+    rgba(0, 0, 0, 0.85) 82%,
+    transparent 100%
+  );
+}
+
+body.flip-mode .chart-wave {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(0, 0, 0, 0.85) 18%,
+    rgba(0, 0, 0, 0.85) 82%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(0, 0, 0, 0.85) 18%,
+    rgba(0, 0, 0, 0.85) 82%,
+    transparent 100%
+  );
 }
 
 .axis {
@@ -67,6 +192,7 @@ body {
   top: 50%;
   transform: translateY(-50%);
   height: 2px;
+  z-index: 3;
 }
 
 .axis-line {
@@ -75,12 +201,29 @@ body {
   background: linear-gradient(90deg, transparent, var(--line-strong), transparent);
 }
 
+body.flip-mode .axis {
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  right: auto;
+  width: 2px;
+  height: auto;
+  transform: translateX(-50%);
+}
+
+body.flip-mode .axis-line {
+  width: 2px;
+  height: 100%;
+  background: linear-gradient(180deg, transparent, var(--line-strong), transparent);
+}
+
 .zodiac-band {
   position: absolute;
   left: 0;
   right: 0;
   top: 0;
   bottom: 0;
+  z-index: 2;
 }
 
 .zodiac-tick {
@@ -92,13 +235,31 @@ body {
   background: var(--line);
 }
 
+.zodiac-tick--h {
+  left: 50%;
+  top: 0;
+  transform: translate(-50%, -50%);
+  width: 1.8rem;
+  height: 1px;
+}
+
 .zodiac-label {
   position: absolute;
-  top: calc(50% - 108px);
+  top: calc(50% - 44px);
   transform: translateX(-50%);
   font-size: clamp(1.45rem, 2.6vw, 2rem);
   color: rgba(240, 242, 247, 0.9);
   font-family: "Noto Sans Symbols 2", "Segoe UI Symbol", "Apple Symbols", serif;
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: none;
+}
+
+.zodiac-label--v {
+  left: calc(50% - 42px);
+  top: 0;
+  transform: translate(-100%, -50%);
+  text-align: right;
 }
 
 .planet-layer {
@@ -107,6 +268,7 @@ body {
   right: 0;
   top: 0;
   bottom: 0;
+  z-index: 4;
   pointer-events: none;
 }
 
@@ -119,24 +281,35 @@ body {
 }
 
 .planet__node {
-  width: 24px;
-  height: 24px;
+  width: 31px;
+  height: 31px;
   border-radius: 50%;
-  background: #f1f3f9;
-  color: #101423;
+  background: color-mix(in srgb, var(--planet-color, #f0f2f7) 28%, #060912 72%);
+  color: #f4f8ff;
   display: grid;
   place-items: center;
-  font-size: 1.3rem;
+  font-size: 1.69rem;
   line-height: 1;
   font-weight: 600;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--planet-color, #f0f2f7) 62%, rgba(255, 255, 255, 0.18) 38%),
+    0 0 18px color-mix(in srgb, var(--planet-color, #f0f2f7) 30%, transparent);
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.72),
+    0 0 8px rgba(255, 255, 255, 0.18);
   font-family: "Noto Sans Symbols 2", "Segoe UI Symbol", "Apple Symbols", serif;
 }
 
+.planet__glyph {
+  display: block;
+  line-height: 1;
+  transform: translate(0.03em, 0.04em);
+}
+
 .planet--sun .planet__node {
-  width: 42px;
-  height: 42px;
-  font-size: 1.4rem;
+  width: 55px;
+  height: 55px;
+  font-size: 1.82rem;
   background: radial-gradient(circle at 36% 34%, #fff8d9, var(--accent));
   color: #382300;
   box-shadow:
@@ -146,7 +319,7 @@ body {
 
 .planet__label {
   position: absolute;
-  top: 36px;
+  top: 46px;
   left: 50%;
   transform: translateX(-50%);
   font-size: 0.75rem;
@@ -160,47 +333,30 @@ body {
   background: rgba(4, 6, 10, 0.72);
 }
 
-.legend {
-  margin-top: 0;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.55rem;
-}
-
-.legend-item {
-  border: 1px solid rgba(240, 242, 247, 0.16);
-  border-radius: 0.55rem;
-  padding: 0.55rem 0.7rem;
-  background: rgba(7, 11, 17, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  transition: border-color 120ms ease, background-color 120ms ease;
-}
-
-.legend-left {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-}
-
-.legend-symbol {
-  font-size: 1.1rem;
-  font-family: "Noto Sans Symbols 2", "Segoe UI Symbol", "Apple Symbols", serif;
-}
-
-.legend-value {
-  font-variant-numeric: tabular-nums;
-  color: var(--muted);
-  font-size: 0.85rem;
+#trend-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .time-controls {
   margin-top: 0;
   display: grid;
-  grid-template-columns: repeat(9, minmax(0, 1fr));
+  grid-template-columns: repeat(13, minmax(0, 1fr));
   gap: 0.55rem;
+}
+
+body.controls-right .time-controls {
+  position: fixed;
+  right: 0.8rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+  margin: 0;
+  width: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
 }
 
 .time-btn {
@@ -213,6 +369,13 @@ body {
   font-size: 0.92rem;
   letter-spacing: 0.02em;
   cursor: pointer;
+}
+
+body.controls-right .time-btn {
+  min-width: 5.55rem;
+  padding: 0.42rem 0.55rem;
+  font-size: 0.82rem;
+  text-align: left;
 }
 
 .time-btn:hover {
@@ -241,34 +404,41 @@ body {
   }
 
   .zodiac-label {
-    top: calc(50% - 96px);
-  }
-
-  .legend {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .legend-item {
-    padding: 0.45rem 0.5rem;
-  }
-
-  .legend-value {
-    font-size: 0.78rem;
+    top: calc(50% - 38px);
   }
 
   .time-controls {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  body.controls-right .time-controls {
+    position: static;
+    right: auto;
+    top: auto;
+    transform: none;
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.55rem;
+    margin-top: 0;
+  }
+
+  body.controls-right .time-btn {
+    min-width: 0;
+    text-align: center;
+    padding: 0.52rem 0.6rem;
+    font-size: 0.92rem;
+  }
+
   .planet__node {
-    width: 22px;
-    height: 22px;
-    font-size: 1.24rem;
+    width: 29px;
+    height: 29px;
+    font-size: 1.61rem;
   }
 
   .planet--sun .planet__node {
-    width: 38px;
-    height: 38px;
-    font-size: 1.2rem;
+    width: 49px;
+    height: 49px;
+    font-size: 1.56rem;
   }
 }
