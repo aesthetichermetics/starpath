@@ -385,6 +385,7 @@ body.controls-right .time-controls {
 }
 
 .time-btn {
+  position: relative;
   border: 1px solid rgba(240, 242, 247, 0.2);
   border-radius: 0.5rem;
   padding: 0.52rem 0.6rem;
@@ -409,9 +410,19 @@ body.controls-right .time-btn {
 }
 
 .time-btn--step-active {
-  border-color: rgba(240, 242, 247, 0.46);
-  background: rgba(240, 242, 247, 0.1);
-  box-shadow: inset 0 0 0 1px rgba(240, 242, 247, 0.14);
+}
+
+.time-btn--step-active::after {
+  content: "";
+  position: absolute;
+  right: 0.48rem;
+  top: 50%;
+  width: 0.34rem;
+  height: 0.34rem;
+  border-radius: 50%;
+  background: rgba(240, 242, 247, 0.58);
+  transform: translateY(-50%);
+  pointer-events: none;
 }
 
 .time-btn--now {
